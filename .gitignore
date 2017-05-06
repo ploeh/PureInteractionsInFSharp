@@ -92,3 +92,6 @@ UpgradeLog*.XML
 
 # FAKE hidden directory
 .fake/
+
+# Paket
+.paket/paket.exe
