@@ -10,10 +10,8 @@ let rec interpret = function
         next |> interpret
 
 [<EntryPoint>]
-let main _ = 
-    commandLine {
-        do!  CommandLine.writeLine "Please enter your name."
-        let! name = CommandLine.readLine
-        do!  sprintf "Hello, %s!" name |> CommandLine.writeLine }
+let main _ =
+    Wizard.readReservationRequest
+    |> CommandLine.bind (CommandLine.writeLine << (sprintf "%A"))
     |> interpret
     0 // return an integer exit code
