@@ -10,13 +10,10 @@ let rec interpret = function
         next |> interpret
 
 [<EntryPoint>]
-let main _ =
-    let program =
-        Free (WriteLine (
-                "Please enter your name.",
-                Free (ReadLine (
-                        fun s -> Free (WriteLine (
-                                        sprintf "Hello, %s!" s,
-                                        Pure ()))))))
-    interpret program
+let main _ = 
+    commandLine {
+        do!  CommandLine.writeLine "Please enter your name."
+        let! name = CommandLine.readLine
+        do!  sprintf "Hello, %s!" name |> CommandLine.writeLine }
+    |> interpret
     0 // return an integer exit code
