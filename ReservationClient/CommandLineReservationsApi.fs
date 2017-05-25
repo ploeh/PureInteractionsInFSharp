@@ -1,10 +1,7 @@
 ﻿namespace Ploeh.Samples
 
-type CommandLineReservationsApiT<'a> =
-| Run of CommandLineProgram<ReservationsApiProgram<'a>>
-
 type CommandLineReservationsApiProgram<'a> =
-| Free of CommandLineReservationsApiT<CommandLineReservationsApiProgram<'a>>
+| Free of CommandLineProgram<ReservationsApiProgram<CommandLineReservationsApiProgram<'a>>>
 | Pure of 'a
 
 module CommandLineReservationsApi =
@@ -13,15 +10,13 @@ module CommandLineReservationsApi =
         let! x' = x
         return ReservationsApi.map f x' }
 
-    let private mapT f (Run p) = mapStack f p |> Run
-
     let rec bind f = function
-        | Free instruction -> instruction |> mapT (bind f) |> Free
+        | Free instruction -> instruction |> mapStack (bind f) |> Free
         | Pure x -> f x
 
     let map f = bind (f >> Pure)
 
-    let private wrap x = x |> Run |> mapT Pure |> Free
+    let private wrap x = x |> mapStack Pure |> Free
     let liftCL x = wrap <| CommandLine.map ReservationsApiProgram.Pure x
     let liftRA x = wrap <| CommandLineProgram.Pure x
 

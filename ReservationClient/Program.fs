@@ -25,7 +25,7 @@ let rec interpretReservationsApi = function
 
 let rec interpret = function
     | CommandLineReservationsApiProgram.Pure x -> x
-    | CommandLineReservationsApiProgram.Free (Run p) ->
+    | CommandLineReservationsApiProgram.Free p ->
         p |> interpretCommandLine |> interpretReservationsApi |> interpret
 
 [<EntryPoint>]
