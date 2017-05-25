@@ -2,16 +2,33 @@
 
 open System
 
-let rec interpret = function
-    | Pure x -> x
-    | Free (ReadLine  next) -> Console.ReadLine () |> next |> interpret
-    | Free (WriteLine (s, next)) ->
+let rec interpretCommandLine = function
+    | CommandLineProgram.Pure x -> x
+    | CommandLineProgram.Free (ReadLine next) ->
+        Console.ReadLine ()
+        |> next
+        |> interpretCommandLine
+    | CommandLineProgram.Free (WriteLine (s, next)) ->
         Console.WriteLine s
-        next |> interpret
+        next |> interpretCommandLine
+
+let rec interpretReservationsApi = function
+    | ReservationsApiProgram.Pure x -> x
+    | ReservationsApiProgram.Free (GetSlots (d, next)) ->
+        ReservationHttpClient.getSlots d
+        |> Async.RunSynchronously        
+        |> next
+        |> interpretReservationsApi
+    | ReservationsApiProgram.Free (PostReservation (r, next)) ->
+        ReservationHttpClient.postReservation r |> Async.RunSynchronously
+        next |> interpretReservationsApi
+
+let rec interpret = function
+    | CommandLineReservationsApiProgram.Pure x -> x
+    | CommandLineReservationsApiProgram.Free (Run p) ->
+        p |> interpretCommandLine |> interpretReservationsApi |> interpret
 
 [<EntryPoint>]
 let main _ =
-    Wizard.readReservationRequest
-    |> CommandLine.bind (CommandLine.writeLine << (sprintf "%A"))
-    |> interpret
+    interpret Wizard.tryReserve
     0 // return an integer exit code

@@ -1,15 +1,11 @@
 ﻿namespace Ploeh.Samples
 
 open System
-
-type Reservation = {
-    Date : DateTimeOffset
-    Name : string
-    Email : string
-    Quantity : int }
+open CommandLineReservationsApi
 
 #nowarn "40"
 module Wizard =
+
     let rec readQuantity = commandLine {
         do!  CommandLine.writeLine "Please enter number of diners:"
         let! l = CommandLine.readLine
@@ -36,9 +32,22 @@ module Wizard =
         do! CommandLine.writeLine "Please enter your email address:"
         return! CommandLine.readLine }
 
-    let readReservationRequest = commandLine {
-        let! count = readQuantity
-        let! date = readDate
-        let! name = readName
-        let! email = readEmail
-        return { Date = date; Name = name; Email = email; Quantity = count } }
+    let tryReserve = commandLineReservationsApi {
+        let! count = liftCL readQuantity
+        let! date = liftCL readDate
+        let! availableSeats =
+            ReservationsApi.getSlots date
+            |> ReservationsApi.map (List.sumBy (fun slot -> slot.SeatsLeft))
+            |> liftRA
+        if availableSeats < count
+        then do!
+            sprintf "Only %i remaining seats." availableSeats
+            |> CommandLine.writeLine
+            |> liftCL
+        else
+            let! name = liftCL readName
+            let! email = liftCL readEmail
+            do! { Date = date; Name = name; Email = email; Quantity = count }
+                |> ReservationsApi.postReservation 
+                |> liftRA
+        }
